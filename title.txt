@@ -1,0 +1,1 @@
+id|email|password|admin|name|image|created_at
