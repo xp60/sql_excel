@@ -45,7 +45,6 @@ def get_data(db,sql):
         cur.close()
 
 
-
 if __name__ == '__main__':
     ThisMonthToday=datetime.date.today()
     configs = toDict(configs)
@@ -60,36 +59,32 @@ if __name__ == '__main__':
     with open('sql.txt', 'r') as f:
         for line in f.readlines():
             try:
-                print(line.strip())
+                # print(line.strip())
                 data_1=get_data(db,line)
                 date_list.append(data_1)
                 # print('=====',data_1)
             except:
                 raise
-        # db.close()
     db.close()
-    print(date_list)
-
+    # print(date_list)
     # 创建一个xls文件对象
     wb = xlwt.Workbook()
     # 加入表单
     sh = wb.add_sheet('Last_month')
     # 制作表头
     with open('title.txt', 'r') as f:
-        print('---into')
         for line in f.readlines():
-            print(str(line))
+            # print(str(line))
             try:
                title_list = re.split(r'[|]+', str(line).strip() )
                i = 0
-               print(title_list)
+            #    print(title_list)
                for title in title_list:
                    sh.write(0,i,title)
                    i += 1
-                   print(i)
+                #    print(i)
             except:
                 raise
-        # db.close()
     data_1_lenth=len(date_list)
     start_row_num=1
     for date_1_list in date_list:
@@ -101,3 +96,4 @@ if __name__ == '__main__':
             start_row_num+=1
     filename=str(ThisMonthToday)
     wb.save(filename+'报表'+'.xls')
+    print('报表生成完成！！！')
