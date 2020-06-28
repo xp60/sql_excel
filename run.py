@@ -3,6 +3,7 @@ import xlwt
 from config import *
 import os, re
 import sys
+from time import sleep
 
 
 
@@ -46,6 +47,10 @@ def get_data(db,sql):
         cur.close()
 
 
+# str 转 list
+def str_to_list(str):
+    return str.replace('[','').replace(']','').split(',')
+
 if __name__ == '__main__':
     ThisMonthToday=datetime.date.today()
     configs = toDict(configs)
@@ -57,33 +62,56 @@ if __name__ == '__main__':
     # 连接数据库
     db= pymysql.connect(host=host,user=user,password=password,db=db_name,port=port)
     date_list=[]
+    parameter_list=[]
     # 接受参数
     date = sys.argv
     date.remove('run.py')
-    with open('sql.txt', 'r') as f:
-        sql = ''
-        for line in f.readlines():
-            try:
-                if line.strip().endswith(';'):
-                    sql += line.replace('\n', ' ')
-                    if re.findall(r'{',sql):
-                        print('into re========',date)
-                        if (len(date) < 2):
-                            sql = sql.format(date[0]) 
-                        else:
-                            sql = sql.format(*date) 
-                        print(sql)
-                    print(sql)
-                    date_list.append(get_data(db,sql))
-                    sql = ''
-                else:
-                    sql += line.replace('\n', ' ')
-                    print(sql)
-                
+    print(date)
+    for i in date:
+        parameter_list.append(str_to_list(i))
+    print(parameter_list)
+    print(os.getcwd())
+    ########
 
-                
-            except:
-                raise
+    sql_list = []
+    os.chdir(r'sql')
+    li  = os.listdir()
+    for i in li:
+        if i.split('.')[-1]=='sql':
+            sql_list.append(i)
+    print('sql_list is :',sql_list)
+    parameter_index = 0
+    for sql_file in sql_list:
+        with open(sql_file, 'r') as f:
+            sql = ''
+            for line in f.readlines():
+                try:
+                    print(line == '')
+                    
+              
+                    if line.strip().endswith(';') :
+                        
+                        sql += line.replace('\n', ' ')
+                        print(sql)
+                        # 传执行时的参数
+                        if re.findall(r'{',sql):
+                            print('into re========',parameter_list[parameter_index])
+                            if (len(parameter_list[parameter_index]) < 2):
+                                sql = sql.format(parameter_list[parameter_index]) 
+                            else:
+                                sql = sql.format(*parameter_list[parameter_index]) 
+                            print(sql)
+                        print(sql)
+                        date_list.append(get_data(db,sql))
+                        sql = ''
+                    elif not line.strip().startswith('--'):
+                        sql += line.replace('\n', ' ')
+                        print(sql)
+                    else:
+                        pass
+                except:
+                    raise
+            parameter_index += 1
     db.close()
     # print(date_list)
     # 创建一个xls文件对象
@@ -91,6 +119,7 @@ if __name__ == '__main__':
     # 加入表单
     sh = wb.add_sheet('Last_month')
     # 制作表头
+    os.chdir(r'../')
     with open('title.txt', 'r') as f:
         for line in f.readlines():
             # print(str(line))
