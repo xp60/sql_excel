@@ -57,12 +57,23 @@ if __name__ == '__main__':
     db= pymysql.connect(host=host,user=user,password=password,db=db_name,port=port)
     date_list=[]
     with open('sql.txt', 'r') as f:
+        sql = ''
         for line in f.readlines():
             try:
                 # print(line.strip())
-                data_1=get_data(db,line)
-                date_list.append(data_1)
-                # print('=====',data_1)
+                if line.strip().endswith(';'):
+                    sql += line.replace('\n', ' ')
+                    # print(sql)
+                    data_1=get_data(db,sql)
+                    date_list.append(data_1)
+                    sql = ''
+                    # print('=====',data_1)
+                else:
+                    sql += line.replace('\n', ' ')
+                    print(sql)
+                
+
+                
             except:
                 raise
     db.close()

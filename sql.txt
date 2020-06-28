@@ -1,2 +1,9 @@
-select * from users where name='xyz';
-select * from users where name='yyyy';
+
+select * 
+from users 
+where name='xyz';
+
+
+select * from users where name='yyy';
+
+
