@@ -2,6 +2,7 @@ import datetime,pymysql,time
 import xlwt
 from config import *
 import os, re
+import sys
 
 
 
@@ -56,18 +57,25 @@ if __name__ == '__main__':
     # 连接数据库
     db= pymysql.connect(host=host,user=user,password=password,db=db_name,port=port)
     date_list=[]
+    # 接受参数
+    date = sys.argv
+    date.remove('run.py')
     with open('sql.txt', 'r') as f:
         sql = ''
         for line in f.readlines():
             try:
-                # print(line.strip())
                 if line.strip().endswith(';'):
                     sql += line.replace('\n', ' ')
-                    # print(sql)
-                    data_1=get_data(db,sql)
-                    date_list.append(data_1)
+                    if re.findall(r'{',sql):
+                        print('into re========',date)
+                        if (len(date) < 2):
+                            sql = sql.format(date[0]) 
+                        else:
+                            sql = sql.format(*date) 
+                        print(sql)
+                    print(sql)
+                    date_list.append(get_data(db,sql))
                     sql = ''
-                    # print('=====',data_1)
                 else:
                     sql += line.replace('\n', ' ')
                     print(sql)

@@ -1,9 +1,10 @@
 
-select * 
-from users 
-where name='xyz';
 
 
-select * from users where name='yyy';
+
+select * from users
+ where name = '{}' 
+ and admin = 
+ '{}';
 
 
