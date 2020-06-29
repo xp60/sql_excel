@@ -1,9 +1,67 @@
-import datetime,pymysql,time
-import xlwt
+from multiprocessing import Pool
+from time import sleep
 from config import *
+import datetime,pymysql,time
 import os, re
 import sys
-from time import sleep
+import xlwt
+
+
+max_process = 2
+
+
+def read_SQL_select(configs, sql,sql_title):
+    print(sql)
+    host=configs['db']['host']
+    port=configs['db']['port']
+    db_name=configs['db']['database']
+    user=configs['db']['user']
+    password=configs['db']['password']
+    # 连接数据库
+    db= pymysql.connect(host=host,user=user,password=password,db=db_name,port=port)
+    cur = db.cursor()
+    # 使用cursor()方法获取操作游标
+    try:
+        cur.execute(sql)   #执行sql语句
+        date_list = cur.fetchall()  #获取查询的所有记录
+    except:
+        print('sql error---------',sql)
+        raise
+    finally:
+        cur.close()
+        db.close()
+    # print(date_list)
+    # 做表
+    wb = xlwt.Workbook()
+    # 加入表单
+    sh = wb.add_sheet('date')
+    # 制作表头
+    with open('title.txt', 'r') as f:
+        for line in f.readlines():
+            # print(str(line))
+            try:
+                title_list = re.split(r'[|]+', str(line).strip() )
+                i = 0
+                #    print(title_list)
+                for title in title_list:
+                    sh.write(0,i,title)
+                    i += 1
+                    #    print(i)
+            except:
+                raise
+    data_1_lenth=len(date_list)
+    start_row_num=1
+    for date_1_list in date_list:
+        start_col_num=0
+        for item in date_1_list:
+            sh.write(start_row_num,start_col_num,item)
+            start_col_num+=1
+        start_row_num+=1
+
+
+    filename=str(ThisMonthToday)
+    wb.save(sql_title+'-'+filename+'报表'+'.xls')
+    print(sql_title + '报表生成完成！！！')
 
 
 
@@ -33,39 +91,7 @@ def toDict(d):
         D[k] = toDict(v) if isinstance(v, dict) else v
     return D
 
-# 数据写入表格
-def create_excel(date_list, sql_title):
 
-    wb = xlwt.Workbook()
-    # 加入表单
-    sh = wb.add_sheet('date')
-    # 制作表头
-    with open('title.txt', 'r') as f:
-        for line in f.readlines():
-            # print(str(line))
-            try:
-                title_list = re.split(r'[|]+', str(line).strip() )
-                i = 0
-                #    print(title_list)
-                for title in title_list:
-                    sh.write(0,i,title)
-                    i += 1
-                    #    print(i)
-            except:
-                raise
-    data_1_lenth=len(date_list)
-    start_row_num=1
-    for date_1_list in date_list:
-        for item in date_1_list:
-            start_col_num=0
-            for date in item:
-                sh.write(start_row_num,start_col_num,date)
-                start_col_num+=1
-            start_row_num+=1
-    filename=str(ThisMonthToday)
-    wb.save(sql_title+'-'+filename+'报表'+'.xls')
-    print(sql_title + '报表生成完成！！！')
-    
 
 #定义个方法执行查询sql操作
 def get_data(db,sql):
@@ -78,8 +104,6 @@ def get_data(db,sql):
         raise e
     finally:
         cur.close()
-
-
 # str 转 list
 def str_to_list(now_str):
     # 多个参数解析成list
@@ -96,15 +120,8 @@ def str_to_list(now_str):
 
 if __name__ == '__main__':
     ThisMonthToday=datetime.date.today()
+    # sql配置信息
     configs = toDict(configs)
-    host=configs['db']['host']
-    port=configs['db']['port']
-    db_name=configs['db']['database']
-    user=configs['db']['user']
-    password=configs['db']['password']
-    # 连接数据库
-    db= pymysql.connect(host=host,user=user,password=password,db=db_name,port=port)
-    date_list=[]
     parameter_list=[]
     # 拿取sql.txt参数
     with open('date.txt', 'r') as f:
@@ -116,36 +133,70 @@ if __name__ == '__main__':
             resut_list = re.split(r" +",line,1)
             sql_file = resut_list[0]
             parameter_list = str_to_list(resut_list[1])
+            parameter_list_len = 0
+            if not isinstance(parameter_list[0], str):
+                parameter_list_len = len(parameter_list) 
             try:
+                
                 # sql_file == xxx.sql
                 with open(sql_file, 'r') as f:
                     sql = ''
                     for run_sql_line in f.readlines():
                         # print(run_sql_line)
+                        #  TODO 
                         if run_sql_line.strip().endswith(';') :
                             # 准备执行sql
                             sql += run_sql_line.replace('\n', ' ')
                                 # 传执行时的参数
                             if re.findall(r'{',sql):
-                                if (isinstance(parameter_list[0], str)):
+                                p_count = 1
+                                p = None
+                            
+                                if (parameter_list_len == 0 ):
+
                                     for i in parameter_list:
-                                        # print(sql.format(i))
-                                        date_list.append(get_data(db,sql.format(i)))
+                                        print(sql.format(i))
+                                        if p_count % max_process == 1:
+                                            print(i)
+                                            if p:
+                                                p.close()
+                                                p.join()
+                                            p = Pool(max_process)
+                                        p.apply_async(func=read_SQL_select, args=(configs,sql.format(i),sql_file.split('.')[0]+'-'+str(p_count)))
+                                        # read_SQL_select(configs,sql.format(i),sql_file.split('.')[0]+str(p_count))
+                                        # date_list.append(get_data(db,))
+                                        p_count += 1
+                                    if p:
+                                        p.close()
+                                        p.join()
                                 else:
                                     for i in parameter_list:
-                                        # print(sql.format(*i))
-                                        date_list.append(get_data(db,sql.format(*i) ))
+                                        print(sql.format(*i))
+                                        if p_count % max_process == 1:
+                                            if p:
+                                                p.close()
+                                                p.join()
+                                            p = Pool(max_process)
+                                        p.apply_async(func=read_SQL_select, args=(configs,sql.format(*i),sql_file.split('.')[0]+'-'+str(p_count)))
+                                        # read_SQL_select(configs,sql.format(*i),sql_file.split('.')[0]+str(p_count))
+                                        # date_list.append(get_data(db,))
+                                        p_count += 1
+                                    if p:
+                                        p.close()
+                                        p.join()
+                                    # p_count = 1
                             sql = ''
                         elif not run_sql_line.strip().startswith('--'):
                             sql += run_sql_line.replace('\n', ' ')
                         else:
                             pass
-                    print(sql_file.split('.')[0])
-                    create_excel(date_list,sql_file.split('.')[0])
-                    date_list.clear()
+                    # print(sql_file.split('.')[0])
+                    # create_excel(date_list,sql_file.split('.')[0])
+                    # date_list.clear()
             except:
+                # raise
                 raise
-    db.close()
+    # db.close()
     # print(date_list)
     # 创建一个xls文件对象
 
