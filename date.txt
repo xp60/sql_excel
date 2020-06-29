@@ -1,1 +1,3 @@
-test.sql       [yyyy]
+test.sql       [yyyy,xyz,xpxux]
+test1.sql      [(yyyy,    1),(xyz  ,0),(  xpxux,0)]
+test2.sql      [(xyz,  0 , xyz@xyz.xyz.xzyz.c,)]

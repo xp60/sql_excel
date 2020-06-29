@@ -48,8 +48,18 @@ def get_data(db,sql):
 
 
 # str 转 list
-def str_to_list(str):
-    return  list(map(lambda x: x.strip(), str.replace('[','').replace(']','').split(',')))
+def str_to_list(now_str):
+    # 多个参数解析成list
+    if re.findall(r'\(',now_str):
+        cur_str = now_str.replace('[','').replace(']','').replace('(','|').replace(')','|').replace(' ','').split('|')
+        # print(cur_str)
+        str_list = []
+        for temporary_str in cur_str:
+            if temporary_str != '' and temporary_str!=',':
+                str_list.append(temporary_str.split(','))
+        return str_list
+    else:
+        return  list(map(lambda x: x.strip(), now_str.replace('[','').replace(']','').split(',')))
 
 if __name__ == '__main__':
     ThisMonthToday=datetime.date.today()
@@ -78,7 +88,7 @@ if __name__ == '__main__':
                 with open(sql_file, 'r') as f:
                     sql = ''
                     for run_sql_line in f.readlines():
-                        print(run_sql_line)
+                        # print(run_sql_line)
                         if run_sql_line.strip().endswith(';') :
                             # 准备执行sql
                             sql += run_sql_line.replace('\n', ' ')
@@ -86,9 +96,11 @@ if __name__ == '__main__':
                             if re.findall(r'{',sql):
                                 if (isinstance(parameter_list[0], str)):
                                     for i in parameter_list:
+                                        # print(sql.format(i))
                                         date_list.append(get_data(db,sql.format(i)))
                                 else:
                                     for i in parameter_list:
+                                        # print(sql.format(*i))
                                         date_list.append(get_data(db,sql.format(*i) ))
                             sql = ''
                         elif not run_sql_line.strip().startswith('--'):

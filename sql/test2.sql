@@ -6,6 +6,7 @@
 select * from users
  where name = '{}' and
 admin = 
- '{}';
+ '{}' and 
+ email = '{}';
 
 
