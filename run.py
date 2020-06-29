@@ -7,7 +7,12 @@ import sys
 import xlwt
 
 
-max_process = 2
+import xlrd
+import pandas as pd
+from pathlib import Path
+
+
+max_process = 10
 
 
 def read_SQL_select(configs, sql,sql_title):
@@ -117,6 +122,36 @@ def str_to_list(now_str):
         return str_list
     else:
         return  list(map(lambda x: x.strip(), now_str.replace('[','').replace(']','').split(',')))
+# 获取xls表
+def file_name(file_dir):
+    list=[]
+    for file in os.listdir(file_dir):
+        if os.path.splitext(file)[1] == '.xls' or os.path.splitext(file)[1] == '.xlsx':
+            list.append(file)
+    return list
+
+def merge_xlsx(path,filenames,sheet_num,output_filename):
+    data = []   #定义一个空list
+    title = []
+    path_folder = Path(path)
+    for i in range(len(filenames)):
+        read_xlsx = xlrd.open_workbook(path_folder / filenames[i])
+        sheet_num_data = read_xlsx.sheets()[sheet_num] #查看指定sheet_num的数据
+        title = sheet_num_data.row_values(0)   #表头
+        for j in range(1,sheet_num_data.nrows): #逐行打印
+            data.append(sheet_num_data.row_values(j))
+    content= pd.DataFrame(data)
+    #修改表头
+    content.columns = title
+    #写入excel文件
+    output_path = path_folder / 'output'
+    output_filename_xlsx = output_filename + '-'+ str(ThisMonthToday) + '.xlsx'
+    if not os.path.exists(output_path):
+        print("output folder not exist, create it")
+        os.mkdir(output_path)
+    content.to_excel((output_path / output_filename_xlsx), header=True, index=False)
+    print("merge success")
+
 
 if __name__ == '__main__':
     ThisMonthToday=datetime.date.today()
@@ -128,7 +163,6 @@ if __name__ == '__main__':
         # 切换sql目录
         os.chdir(r'sql')
         for line in f.readlines():
-            
             line = line.replace('\n', '')
             resut_list = re.split(r" +",line,1)
             sql_file = resut_list[0]
@@ -137,13 +171,12 @@ if __name__ == '__main__':
             if not isinstance(parameter_list[0], str):
                 parameter_list_len = len(parameter_list) 
             try:
-                
                 # sql_file == xxx.sql
                 with open(sql_file, 'r') as f:
                     sql = ''
                     for run_sql_line in f.readlines():
                         # print(run_sql_line)
-                        #  TODO 
+                        
                         if run_sql_line.strip().endswith(';') :
                             # 准备执行sql
                             sql += run_sql_line.replace('\n', ' ')
@@ -151,9 +184,7 @@ if __name__ == '__main__':
                             if re.findall(r'{',sql):
                                 p_count = 1
                                 p = None
-                            
                                 if (parameter_list_len == 0 ):
-
                                     for i in parameter_list:
                                         print(sql.format(i))
                                         if p_count % max_process == 1:
@@ -201,3 +232,17 @@ if __name__ == '__main__':
     # 创建一个xls文件对象
 
 
+    os.chdir(r'../')
+    print(file_name('sql'))
+    filenames = file_name('sql')
+    k_file = {}
+    for name in filenames:
+        if name.split('-')[0] not in k_file:
+            k_file[name.split('-')[0]] = [name]
+        else:
+            k_file[name.split('-')[0]].append(name)
+    print(k_file)
+    for k, v in k_file.items():
+        print(k,v)
+        merge_xlsx('sql',v,0,k) #合并文件中第一个表的数据，输出到 output/sheet1.xlsx中
+    # merge_xlsx(path,filenames,1,"sheet1") #合并文件中第二个表的数据，输出到 output/sheet2.xlsx中
