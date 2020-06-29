@@ -1,9 +1,6 @@
-
 -- DELETE FROM SeatInformation
 
 select * from users
- where name = '{}' 
- and admin = 
- '{}';
+ where name = '{}' ;
 
 

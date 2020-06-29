@@ -49,7 +49,7 @@ def get_data(db,sql):
 
 # str 转 list
 def str_to_list(str):
-    return str.replace('[','').replace(']','').split(',')
+    return  list(map(lambda x: x.strip(), str.replace('[','').replace(']','').split(',')))
 
 if __name__ == '__main__':
     ThisMonthToday=datetime.date.today()
@@ -63,55 +63,40 @@ if __name__ == '__main__':
     db= pymysql.connect(host=host,user=user,password=password,db=db_name,port=port)
     date_list=[]
     parameter_list=[]
-    # 接受参数
-    date = sys.argv
-    date.remove('run.py')
-    print(date)
-    for i in date:
-        parameter_list.append(str_to_list(i))
-    print(parameter_list)
-    print(os.getcwd())
-    ########
-
-    sql_list = []
-    os.chdir(r'sql')
-    li  = os.listdir()
-    for i in li:
-        if i.split('.')[-1]=='sql':
-            sql_list.append(i)
-    print('sql_list is :',sql_list)
-    parameter_index = 0
-    for sql_file in sql_list:
-        with open(sql_file, 'r') as f:
-            sql = ''
-            for line in f.readlines():
-                try:
-                    print(line == '')
-                    
-              
-                    if line.strip().endswith(';') :
-                        
-                        sql += line.replace('\n', ' ')
-                        print(sql)
-                        # 传执行时的参数
-                        if re.findall(r'{',sql):
-                            print('into re========',parameter_list[parameter_index])
-                            if (len(parameter_list[parameter_index]) < 2):
-                                sql = sql.format(parameter_list[parameter_index]) 
-                            else:
-                                sql = sql.format(*parameter_list[parameter_index]) 
-                            print(sql)
-                        print(sql)
-                        date_list.append(get_data(db,sql))
-                        sql = ''
-                    elif not line.strip().startswith('--'):
-                        sql += line.replace('\n', ' ')
-                        print(sql)
-                    else:
-                        pass
-                except:
-                    raise
-            parameter_index += 1
+    # 拿取sql.txt参数
+    with open('date.txt', 'r') as f:
+        # 切换sql目录
+        os.chdir(r'sql')
+        for line in f.readlines():
+            
+            line = line.replace('\n', '')
+            resut_list = re.split(r" +",line,1)
+            sql_file = resut_list[0]
+            parameter_list = str_to_list(resut_list[1])
+            try:
+                # sql_file == xxx.sql
+                with open(sql_file, 'r') as f:
+                    sql = ''
+                    for run_sql_line in f.readlines():
+                        print(run_sql_line)
+                        if run_sql_line.strip().endswith(';') :
+                            # 准备执行sql
+                            sql += run_sql_line.replace('\n', ' ')
+                                # 传执行时的参数
+                            if re.findall(r'{',sql):
+                                if (isinstance(parameter_list[0], str)):
+                                    for i in parameter_list:
+                                        date_list.append(get_data(db,sql.format(i)))
+                                else:
+                                    for i in parameter_list:
+                                        date_list.append(get_data(db,sql.format(*i) ))
+                            sql = ''
+                        elif not run_sql_line.strip().startswith('--'):
+                            sql += run_sql_line.replace('\n', ' ')
+                        else:
+                            pass
+            except:
+                raise
     db.close()
     # print(date_list)
     # 创建一个xls文件对象
