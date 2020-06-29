@@ -2,10 +2,5 @@
 -- DELETE FROM SeatInformation
 
 
-
-select * from users
- where name = '{}' and
-admin = 
- '{}';
-
-
+select * from blogs
+where name = '{}' and user_name ='{}';

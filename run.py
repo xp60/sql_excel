@@ -33,6 +33,39 @@ def toDict(d):
         D[k] = toDict(v) if isinstance(v, dict) else v
     return D
 
+# 数据写入表格
+def create_excel(date_list, sql_title):
+
+    wb = xlwt.Workbook()
+    # 加入表单
+    sh = wb.add_sheet('date')
+    # 制作表头
+    with open('title.txt', 'r') as f:
+        for line in f.readlines():
+            # print(str(line))
+            try:
+                title_list = re.split(r'[|]+', str(line).strip() )
+                i = 0
+                #    print(title_list)
+                for title in title_list:
+                    sh.write(0,i,title)
+                    i += 1
+                    #    print(i)
+            except:
+                raise
+    data_1_lenth=len(date_list)
+    start_row_num=1
+    for date_1_list in date_list:
+        for item in date_1_list:
+            start_col_num=0
+            for date in item:
+                sh.write(start_row_num,start_col_num,date)
+                start_col_num+=1
+            start_row_num+=1
+    filename=str(ThisMonthToday)
+    wb.save(sql_title+'-'+filename+'报表'+'.xls')
+    print(sql_title + '报表生成完成！！！')
+    
 
 #定义个方法执行查询sql操作
 def get_data(db,sql):
@@ -107,38 +140,13 @@ if __name__ == '__main__':
                             sql += run_sql_line.replace('\n', ' ')
                         else:
                             pass
+                    print(sql_file.split('.')[0])
+                    create_excel(date_list,sql_file.split('.')[0])
+                    date_list.clear()
             except:
                 raise
     db.close()
     # print(date_list)
     # 创建一个xls文件对象
-    wb = xlwt.Workbook()
-    # 加入表单
-    sh = wb.add_sheet('Last_month')
-    # 制作表头
-    os.chdir(r'../')
-    with open('title.txt', 'r') as f:
-        for line in f.readlines():
-            # print(str(line))
-            try:
-               title_list = re.split(r'[|]+', str(line).strip() )
-               i = 0
-            #    print(title_list)
-               for title in title_list:
-                   sh.write(0,i,title)
-                   i += 1
-                #    print(i)
-            except:
-                raise
-    data_1_lenth=len(date_list)
-    start_row_num=1
-    for date_1_list in date_list:
-        for item in date_1_list:
-            start_col_num=0
-            for date in item:
-                sh.write(start_row_num,start_col_num,date)
-                start_col_num+=1
-            start_row_num+=1
-    filename=str(ThisMonthToday)
-    wb.save(filename+'报表'+'.xls')
-    print('报表生成完成！！！')
+
+
