@@ -15,7 +15,7 @@ from pathlib import Path
 max_process = 10
 
 
-def read_SQL_select(configs, sql,sql_title):
+def read_SQL_select(configs, sql,sql_title, p_count):
     print(sql)
     host=configs['db']['host']
     port=configs['db']['port']
@@ -40,20 +40,23 @@ def read_SQL_select(configs, sql,sql_title):
     wb = xlwt.Workbook()
     # 加入表单
     sh = wb.add_sheet('date')
+    print(sql_title)
     # 制作表头
     with open('title.txt', 'r') as f:
         for line in f.readlines():
+            re_list = re.split(r"\s+",line,1)
             # print(str(line))
-            try:
-                title_list = re.split(r'[|]+', str(line).strip() )
-                i = 0
-                #    print(title_list)
-                for title in title_list:
-                    sh.write(0,i,title)
-                    i += 1
-                    #    print(i)
-            except:
-                raise
+            if re_list[0] == sql_title:
+                try:
+                    title_list = re.split(r'[|]+', str(re_list[1]).strip() )
+                    i = 0
+                    # print(title_list)
+                    for title in title_list:
+                        sh.write(0,i,title)
+                        i += 1
+                        #    print(i)
+                except:
+                    raise
     data_1_lenth=len(date_list)
     start_row_num=1
     for date_1_list in date_list:
@@ -62,12 +65,9 @@ def read_SQL_select(configs, sql,sql_title):
             sh.write(start_row_num,start_col_num,item)
             start_col_num+=1
         start_row_num+=1
-
-
     filename=str(ThisMonthToday)
-    wb.save(sql_title+'-'+filename+'报表'+'.xls')
+    wb.save(sql_title+'-'+ str(p_count) + '-' +filename+'报表'+'.xls')
     print(sql_title + '报表生成完成！！！')
-
 
 
 class Dict(dict):
@@ -193,7 +193,7 @@ if __name__ == '__main__':
                                                 p.close()
                                                 p.join()
                                             p = Pool(max_process)
-                                        p.apply_async(func=read_SQL_select, args=(configs,sql.format(i),sql_file.split('.')[0]+'-'+str(p_count)))
+                                        p.apply_async(func=read_SQL_select, args=(configs,sql.format(i),sql_file.split('.')[0], p_count))
                                         # read_SQL_select(configs,sql.format(i),sql_file.split('.')[0]+str(p_count))
                                         # date_list.append(get_data(db,))
                                         p_count += 1
@@ -208,7 +208,7 @@ if __name__ == '__main__':
                                                 p.close()
                                                 p.join()
                                             p = Pool(max_process)
-                                        p.apply_async(func=read_SQL_select, args=(configs,sql.format(*i),sql_file.split('.')[0]+'-'+str(p_count)))
+                                        p.apply_async(func=read_SQL_select, args=(configs,sql.format(*i),sql_file.split('.')[0], p_count))
                                         # read_SQL_select(configs,sql.format(*i),sql_file.split('.')[0]+str(p_count))
                                         # date_list.append(get_data(db,))
                                         p_count += 1
